@@ -8,7 +8,9 @@
 #include "image.h"
 
 #include <iostream>
+typedef uint32_t gid_t;
 #include <unistd.h>
+
 
 using namespace std;
 using namespace CGL;
