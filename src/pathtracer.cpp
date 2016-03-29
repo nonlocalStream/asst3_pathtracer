@@ -422,7 +422,33 @@ Spectrum PathTracer::estimate_direct_lighting(const Ray& r, const Intersection& 
   const Vector3D& w_out = w2o * (-r.d);
 
   Spectrum L_out;
+  Spectrum L_light;
 
+  for (SceneLight *l : scene->lights) {
+     Vector3D wi, w_in;
+     float distToLight, pdf;
+     int num_of_samples = (l->is_delta_light()) ? 1 : ns_area_light;
+     int actual_samples = 0;
+     L_light = Spectrum();
+     for (int i = 0; i < num_of_samples; i++) {
+       Spectrum sample_L = l->sample_L(hit_p, &wi, &distToLight, &pdf);
+       w_in = w2o * wi;
+       if (w_in.z < 0) {
+         continue;
+       }
+       Ray shadow = Ray(EPS_D * wi + hit_p, wi, distToLight);
+       if (!bvh->intersect(shadow)) {
+           Spectrum f = isect.bsdf->f(w_out, w_in);
+           //double cos_o = dot(Vector3D(0,0,1), w_in);
+           double cos_w = dot(isect.n.unit(), wi.unit());
+           actual_samples++;        
+           L_light += sample_L * f * cos_w;
+       }
+     }
+     if (actual_samples > 0) {
+       L_out += L_light/actual_samples;
+     }
+  }
   return L_out;
 }
 
