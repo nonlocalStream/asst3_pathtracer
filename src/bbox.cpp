@@ -7,13 +7,49 @@
 
 namespace CGL {
 
+void BBox::intersect_planes(const Ray& r, int axis, double& tmin, double& tmax) const{
+    double p1 = min[axis];
+    double p2 = max[axis];
+    double o = r.o[axis];
+    double d = r.d[axis];
+    if (d == 0.f) {
+      if ((p1<=o) && (o<=p2)) {
+        tmin = -INF_D;
+        tmax = INF_D;
+      } else {
+        tmin = INF_D;
+        tmax = -INF_D;
+      }
+    } else {
+      double t1 = (p1-o)/d;
+      double t2 = (p2-o)/d;
+      tmin = std::min(t1,t2);
+      tmax = std::max(t1,t2);
+    }
+}
 bool BBox::intersect(const Ray& r, double& t0, double& t1) const {
-
   // TODO Part 2, task 2:
   // Implement ray - bounding box intersection test
   // If the ray intersected the bounding box within the range given by
   // t0, t1, update t0 and t1 with the new intersection times.
-
+  //std::cout << "testing bbox: " << std::endl;
+  double tminx, tminy, tminz;
+  double tmaxx, tmaxy, tmaxz;
+  intersect_planes(r, 0, tminx, tmaxx);
+  intersect_planes(r, 1, tminy, tmaxy);
+  intersect_planes(r, 2, tminz, tmaxz);
+  double tmin = std::max(std::max(tminx, tminy), tminz);
+  double tmax = std::min(std::min(tmaxx, tmaxy), tmaxz);
+  //std::cout << "tmin:" << tmin << "; tmax: " << tmax << std::endl;
+  //std::cout << "t0:" << t0 << "; t1: " << t1 << std::endl;
+  if ((tmin <= tmax)&&(t0<=tmin)&&(t1>=tmax)) {
+      //std::cout << "tmin:" << t0 << "; tmax: " << t1 << std::endl;
+      t0 = tmin;
+      t1 = tmax;
+      //std::cout << "true" << std::endl;
+      return true;
+  }
+  //std::cout << "false" << std::endl;
   return false;
 }
 

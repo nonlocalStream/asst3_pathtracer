@@ -119,6 +119,9 @@ struct BBox {
     return min.x > max.x || min.y > max.y || min.z > max.z;
   }
 
+  /** helper function for intersect
+   */
+  void intersect_planes(const Ray& r, int axis, double& tmin, double& tmax) const;
   /**
    * Ray - bbox intersection.
    * Intersects ray with bounding box, does not store shading information.
