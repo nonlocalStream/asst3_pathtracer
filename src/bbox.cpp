@@ -40,17 +40,43 @@ bool BBox::intersect(const Ray& r, double& t0, double& t1) const {
   intersect_planes(r, 2, tminz, tmaxz);
   double tmin = std::max(std::max(tminx, tminy), tminz);
   double tmax = std::min(std::min(tmaxx, tmaxy), tmaxz);
-  //std::cout << "tmin:" << tmin << "; tmax: " << tmax << std::endl;
-  //std::cout << "t0:" << t0 << "; t1: " << t1 << std::endl;
-  if ((tmin <= tmax)&&(t0<=tmin)&&(t1>=tmax)) {
-      //std::cout << "tmin:" << t0 << "; tmax: " << t1 << std::endl;
+  if ((tmin <= tmax)) {//&&(t0<=tmin)&&(t1>=tmax)) {
       t0 = tmin;
       t1 = tmax;
-      //std::cout << "true" << std::endl;
       return true;
   }
-  //std::cout << "false" << std::endl;
   return false;
+/*
+    Vector3D invdir = 1 / r.d; 
+    sign[0] = (invdir.x < 0); 
+    sign[1] = (invdir.y < 0); 
+    sign[2] = (invdir.z < 0); 
+    float tmin, tmax, tymin, tymax, tzmin, tzmax; 
+ 
+    tmin = (bounds[r.sign[0]].x - r.orig.x) * r.invdir.x; 
+    tmax = (bounds[1-r.sign[0]].x - r.orig.x) * r.invdir.x; 
+    tymin = (bounds[r.sign[1]].y - r.orig.y) * r.invdir.y; 
+    tymax = (bounds[1-r.sign[1]].y - r.orig.y) * r.invdir.y; 
+ 
+    if ((tmin > tymax) || (tymin > tmax)) 
+        return false; 
+    if (tymin > tmin) 
+        tmin = tymin; 
+    if (tymax < tmax) 
+        tmax = tymax; 
+ 
+    tzmin = (bounds[r.sign[2]].z - r.orig.z) * r.invdir.z; 
+    tzmax = (bounds[1-r.sign[2]].z - r.orig.z) * r.invdir.z; 
+ 
+    if ((tmin > tzmax) || (tzmin > tmax)) 
+        return false; 
+    if (tzmin > tmin) 
+        tmin = tzmin; 
+    if (tzmax < tmax) 
+        tmax = tzmax; 
+  */
+ 
+    return true;     
 }
 
 void BBox::draw(Color c) const {
