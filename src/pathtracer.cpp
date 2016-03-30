@@ -468,8 +468,8 @@ Spectrum PathTracer::estimate_indirect_lighting(const Ray& r, const Intersection
   float distToLight, pdf;
 
   Spectrum bsdf = isect.bsdf->sample_f(w_out, &w_in, &pdf);
-  float illum = bsdf.illum(); // prob of not terminating
-  if (coin_flip(illum*10)) { //coin_flip == true with prob of (1-tpdf)
+  float illum = clamp(bsdf.illum(), 0, 1); // prob of not terminating
+  if (coin_flip(illum)) { //coin_flip == true with prob of (1-tpdf)
       wi = o2w * w_in;
       Ray trace_r = Ray(EPS_D * wi + hit_p, wi, (int)(r.depth-1));
       double cos_w = dot(isect.n.unit(), wi.unit());
@@ -511,7 +511,7 @@ Spectrum PathTracer::trace_ray(const Ray &r, bool includeLe) {
   // You will implement this in part 4.
   // If the ray's depth is zero, then the path must terminate
   // and no further indirect lighting is calculated.
-  if ((r.depth > 0) && r.depth < max_ray_depth)
+  if (r.depth > 0)
     L_out += estimate_indirect_lighting(r, isect);
 
   return L_out;
