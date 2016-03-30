@@ -464,8 +464,20 @@ Spectrum PathTracer::estimate_indirect_lighting(const Ray& r, const Intersection
   Vector3D hit_p = r.o + r.d * isect.t;
   Vector3D w_out = w2o * (-r.d);
 
-  return Spectrum();
+  Vector3D wi, w_in;
+  float distToLight, pdf;
 
+  Spectrum bsdf = isect.bsdf->sample_f(w_out, &w_in, &pdf);
+  float illum = bsdf.illum(); // prob of not terminating
+  if (coin_flip(illum*10)) { //coin_flip == true with prob of (1-tpdf)
+      wi = o2w * w_in;
+      Ray trace_r = Ray(EPS_D * wi + hit_p, wi, (int)(r.depth-1));
+      double cos_w = dot(isect.n.unit(), wi.unit());
+      Spectrum income_radience = trace_ray(trace_r, isect.bsdf->is_delta());
+      return income_radience * cos_w * bsdf / (pdf * illum);// prob of not terminating
+  } else {
+    return Spectrum();
+  }
 }
 
 Spectrum PathTracer::trace_ray(const Ray &r, bool includeLe) {
@@ -499,7 +511,7 @@ Spectrum PathTracer::trace_ray(const Ray &r, bool includeLe) {
   // You will implement this in part 4.
   // If the ray's depth is zero, then the path must terminate
   // and no further indirect lighting is calculated.
-  if (r.depth > 0)
+  if ((r.depth > 0) && r.depth < max_ray_depth)
     L_out += estimate_indirect_lighting(r, isect);
 
   return L_out;
@@ -528,6 +540,7 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
     sx = xx/sampleBuffer.w;
     sy = yy/sampleBuffer.h;
     Ray r = camera->generate_ray(sx, sy);
+    r.depth = max_ray_depth;
     spec_sum += trace_ray(r, true);
   }
   return spec_sum / num_samples;
