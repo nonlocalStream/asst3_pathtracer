@@ -74,31 +74,328 @@
         </div>
 
     <h2 align="middle">Part 2: Bounding Volume Hierarchy</h2>
-        <p>The previous part a specific ray with primitives by looping over each primitive. In order to speed up this, we use bounding volumn hiearching which store primitives in recursive bounding volumns and find intersections using divide and conquer.</p>
+        <p>The previous part a specific ray with primitives by looping over each primitive. In order to speed up this, we use BVH. A bounding volumn surround a set of primitives completely inside. BVH store primitives in recursive bounding volumns and find intersections using divide and conquer.</p>
         <h3>BVH construction</h3>
+        <p>Recursively construct BVH.<p>
+        <p>Base case: if number of primitives <= max_leaf_size, store then into this BVHNode and set the children to NULL.</p>
+        <p>Recursive Step: Otherwise, find the axis of the bounding box that has the largest extent as the spliting axis. Use the midpoint of the centroid box as the spliting point because we divide the primitives according to their centroid's relative postions</p>
+        <p>Allocate the primitives with centroids left to the splitting point to the left child and right to the right child. For the primitives whose centroid lies on the spliting point, allocate them to whichever child that has fewer primitives. This will avoid the case where one child becomes empty and leads to infinite recursion. Contruct each child recursively.</p>
+        <h3>BVH intersection</h3>
+        <p>Recursively find intersected primitives.<p>
+        <p>Base case: if its a leaf BVHnode, simply call intersect(ray) on each of its primitives.</p>
+        <p>Recursive Step: Otherwise, test if the ray intersect with this node's children's bounding box. If it doesn't intersect with a child's bounding box, it means that it's impossible that the ray will intersect with any of that child's primitives. If it does intersect, we need to recurse into the child and find intersection. If both bounding box intersect, recurse on both.</p>
+        <p>The second version keeps track of a hit boolean instead of return immediately to make sure the nearest intersection is found.</p>
+<!--         <h3>Bounding Box intersection</h3>
+        <p></p> -->
         
+        <p>This is a huge improvement of speed. The same photo CBgems in part1 only takes 10.22s as opposed to 76s.</p>
+        <h3>Normal shading for large dae</h3>
         <div align="center">
             <table style="width=100%">
                 <tr>
                     <td align="middle">
-                    <img src="images/p2/bunny.png" width="480px" />
-                    <figcaption align="middle"></figcaption>
+                    <img src="images/p2/beast.png" width="480px" />
+                    <figcaption align="middle">Building: 39.0777s</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p2/blob.png" width="480px" />
+                    <figcaption align="middle">Blob: 20.3379s</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p2/blob.png" width="480px" />
+                    <figcaption align="middle">Blob: 20.3379s</figcaption>
+                </tr>
+            </table>
+        </div>
 
 
+    <h2 align="middle">Part 3: Direct Illumination</h2>
+    <p>This part render illumination and shadows caused by the light source instead of the naive normal shading.</p>
+    <h3>Implementation:</h3>
+    <p>Loop over each light source in scene->lights.</p>
+    <p>In each iteration, generate ray samples that comes from the light source and hits this intersection point. Average all the radience samples to get the irradience for this intersection point. If it's a delta light source, num_of_samples = 1 because the light from the light source is uniformly distributed. It not, we num_of_samples ns_area_light.</p>
+    <p>Use l->sample_L to get a ray sample, which gives us incoming direction and pdf. if incoming direction from under the surface, skip. Use a shadow ray that cast in the incoming direction converted into world coordinate. If the shadow rate hits any primitives, the light is covered by other objects and thus skip this sample. Otherwise, aggregate the sample radience by mutiplying bsdf(w_out, w_in), cosine of the incoming angle and dividing by pdf. Finally take average by dividing num_of_samples</p>
+    <p align="middle">Irradience = 1/num_of_samples*sample_radience*bsdf*cos(w_in)/pdf.</pre></p>
+    <h3>Some results:</h3>
+    <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/bunny_64_32.png" width="480px" />
+                    <figcaption align="middle">Bunny</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/dragon_64_32.png" width="480px" />
+                    <figcaption align="middle">Dragon</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/walle.png" width="480px" />
+                    <figcaption align="middle">Wall-E</figcaption>
+                </tr>
+            </table>
+    </div>
+    <h3>Compare noise levels when using different number of light rays.</h3>
+    <p>The noise in the soft shadows decreases significantly when using more number of light rays.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/bunny_light_1.png" width="480px" />
+                    <figcaption align="middle">Using 1 light rays</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/bunny_light_2.png" width="480px" />
+                    <figcaption align="middle">Using 2 light rays</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/bunny_light_4.png" width="480px" />
+                    <figcaption align="middle">Using 4 light rays</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/bunny_light_16.png" width="480px" />
+                    <figcaption align="middle">Using 16 light rays</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/bunny_light_64.png" width="480px" />
+                    <figcaption align="middle">Using 64 light rays</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p3/bunny_light_128.png" width="480px" />
+                    <figcaption align="middle">Using 128 light rays</figcaption>
+                </tr>
+            </table>
+        </div>
+    <h2 align="middle">Part 4: Indirect Illumination</h2>
+    <p>This part calculates indirect lights that bounce around the scenes before hitting the object. This renders more realistic and brighter scene.</p>
+    <h3>Implementation:</h3>
+    <p>This time instead of sampling from each area light, we sample rays from the intersection point's bsdf distribution.</p>
+    <p>call sample_f on the intersection point to get a sample incoming ray with its pdf.</p>
+    <p>Use illum = clamp(bsdf.illum()*10, 0, 1) as the rate of not terminating the light (=1-Russian Roulette probability).</p>
+    <p>if coin_flip(illum), we continue trace the light. Construct a ray that goes in the direction of the sample_ray. Recursively call trace_ray on this new ray and pass in isect.bsdf->is_delta() as the second argument to get the incoming radience. Return income_radience * cos(w_in) * bsdf / (pdf * illum) as the indirect irradience.</p>
+    <h3>Some results:</h3>
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/render/bunny.png" width="480px" />
+                    <figcaption align="middle">Bunny</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/render/spheres.png" width="480px" />
+                    <figcaption align="middle">Spheres_lambertian</figcaption>
+                </tr>
+            </table>
+    <h3>direct vs. indirect illumination</h3>
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/indiret/bunny_direct.png" width="480px" />
+                    <figcaption align="middle">Bunny with direct illumination only</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/indiret/bunny_indirect.png" width="480px" />
+                    <figcaption align="middle">Bunny with indirect illumination only</figcaption>
+                </tr>
+            </table>
+    <h3>Compare different max_ray_depth</h3>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/max/spheres_0.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 0</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/max/spheres_1.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 1</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/max/spheres_2.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 2</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/max/spheres_3.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 3</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/max/spheres_4.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 4</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/max/spheres_5.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 5</figcaption>
                 </tr>
 
             </table>
         </div>
-
-        <p>Here is an example of how to include a simple formula:</p>
-        <p align="middle"><pre align="middle">a^2 + b^2 = c^2</pre></p>
-        <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
-        <p>This time it's your job to copy-paste in the rest of the sections :)</p>
-
-
-    <h2 align="middle">Part 3: Direct Illumination</h2>
-    <h2 align="middle">Part 4: Indirect Illumination</h2>
+    <h3>Compare different sample-per-pixel rates</h3>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/sample/s_1.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 1</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/sample/s_2.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 2</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/sample/s_4.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 16</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/sample/s_16.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 16</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/sample/s_64.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 64</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p4/sample/s_1024.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 1024</figcaption>
+                </tr>                   
+            </table>
+        </div>
     <h2 align="middle">Part 5: Materials</h2>
+    <h3>Implementation</h3>
+    <h4>Reflect</h4>
+    <p>This is easy: *wi =Vector3D(-wo.x, -wo.y, wo.z)</p>
+    <h4>MirrorBSDF::sample_f</h4>
+    <p>MirrorBSDF::f returns Spectrum() because it's extremely rare to hit the reflect angle exactly.</p>
+    <p>Return reflectance/cos(w_out) with pdf = 1. </p>
+    <h4>Refract</h4>
+    <p>If dot(wo,n) > 0, outcoming ray is in air, no=1, ni=ior; Otherwise no=ior, ni=1.</p>
+    Use the following formula to calculate incoming ray's theta angle.
+    <p align="middle"><pre align="middle">sin(theta_i) = no*sin(theta_o)/ni</pre></p>
+    <p>If no*sin(theta_o) >= ni, it's a total internal reflection, return false.</p>
+    <p align="middle"><pre align="middle">w_in.x = -wo.x, w_in.y = -wo.y</pre></p>
+    <p align="middle"><pre align="middle">abs(w_in.z) = sqrt((wo.x^2+wo.y^2)*(1/(sin(theta_i)^2)-1))</pre></p>
+    <p>If dot(wo,n) > 0, z is negative else z is positive.</p>
+    <p></p>
+    <h4>GlassBSDF::sample_f</h4>
+    <p>Calculate Schlick's coefficient R: </p>    
+    <p align="middle"><pre align="middle">R0 = pow((1-ior)/(1+ior),2);</pre></p>
+    <p align="middle"><pre align="middle">R = clamp(R0 + (1-R0)*pow((1-cos(theta)),5), 0, 1), where theta is the refracted angle.</pre></p>
+    <p>If reflect() return false, total internal reflection. Return:</p>
+    <p align="middle"><pre align="middle">reflectance / cos(w_out) with wi = reflected angle and pdf = 1</pre></p>
+    <p>If reflect() return true, flip coin with probability of R. If get true for flipping coin, return:</p>
+    <p align="middle"><pre align="middle">reflectance / cos(w_out) with wi = reflected angle and pdf = R</pre></p>
+    <p>If get false for flipping coin, return:</p>
+    <p align="middle"><pre align="middle">(1-R)*transmittance*pow(ni_div_no, 2)/cos_o</pre></p>
+<p align="middle"><pre align="middle"> where wi = refraction angle, pdf = 1-R, ni_div_no = ratio of incoming ray's refraction index divided by outgoing ray's refraction index</pre></p>
+
+    <h3>Compare different max_ray_depth</h3>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p5/max_depth/spheres_max_0.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 0</figcaption>
+                <p>Only direct illumination</p>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p5/max_depth/spheres_max_1.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 1</figcaption>
+                <p>The mirror ball reflect the wall and the glass ball has a bit reflection too.</p>
+                </tr>
+                
+                 <tr>
+                    <td align="middle">
+                    <img src="images/p5/max_depth/spheres_max_2.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 2</figcaption>
+                <p>After two bounce, the light pass through the glass ball and thus glass ball refract the wall. The mirror ball reflect the glass ball in the last iteration.</p>
+                </tr>
+                
+                 <tr>
+                    <td align="middle">
+                    <img src="images/p5/max_depth/spheres_max_3.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 3</figcaption>
+                <p>Mirror ball reflect the glass ball and show it's refraction of wall. After 3 bounces, the light pass through the glass from light source, which acts as a converging lense. A pound of light appear under glass ball.</p>
+                </tr>
+                
+                 <tr>
+                    <td align="middle">
+                    <img src="images/p5/max_depth/spheres_max_4.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 4</figcaption>
+                <p>The converged light on the ground bounce back and get reflected on to the side wall.</p>
+                </tr>
+
+                
+                 <tr>
+                    <td align="middle">
+                    <img src="images/p5/max_depth/spheres_max_5.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 5</figcaption>
+                <p>Start to converge.</p>
+                </tr>
+                
+                 <tr>
+                    <td align="middle">
+                    <img src="images/p5/max_depth/spheres_max_100.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 100</figcaption>
+                <p>Total convergence.</p>
+                </tr>
+                
+            </table>
+        </div>
+
+    <h3>Compare different sample-per-pixel rates</h3>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p5/sample_pixel/spheres_sample_1.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 1</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p5/sample_pixel/spheres_sample_4.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 4</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p5/sample_pixel/spheres_sample_16.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 16</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p5/sample_pixel/spheres_sample_64.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 64</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p5/sample_pixel/spheres_sample_1024.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 1024</figcaption>
+                </tr>
+                           <tr>
+                    <td align="middle">
+                    <img src="images/p5/sample_pixel/spheres_sample_2048.png" width="480px" />
+                    <figcaption align="middle">sample-per-pixel = 2048</figcaption>
+                </tr>    
+            </table>
+        </div>
 
 <!-- 
 ==================small======================
@@ -175,7 +472,7 @@ p4:
 ./pathtracer -t 8 -s 64 -l 16 -m 5 -r 480 360 -f bunny_indirect.png ../dae/sky/CBbunny.dae
 -->
 
-    <h2 align="middle">A Few Notes On Webpages</h2>
+<!--     <h2 align="middle">A Few Notes On Webpages</h2>
         <p>Here are a few problems students have encountered in the past. You will probably encounter these problems at some point, so don't wait until right before the deadline to check that everything is working. Test your website on the instructional machines early!</p>
         <ul>
         <li>Your main report page should be called index.html.</li>
@@ -184,7 +481,7 @@ p4:
         Do <em>NOT</em> use absolute paths, such as <pre>"/Users/student/Desktop/image.jpg"</pre></li>
         <li>Pay close attention to your filename extensions. Remember that on UNIX systems (such as the instructional machines), capitalization matters. <pre>.png != .jpeg != .jpg != .JPG</pre>
         <li>Be sure to adjust the permissions on your files so that they are world readable. For more information on this please see this tutorial: <a href="http://www.grymoire.com/Unix/Permissions.html">http://www.grymoire.com/Unix/Permissions.html</a></li>
-        <li>And again, test your website on the instructional machines early!</li>
+        <li>And again, test your website on the instructional machines early!</li> -->
 </div>
 </body>
 </html>

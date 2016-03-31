@@ -110,7 +110,7 @@ Spectrum GlassBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
       return reflectance / cos_o;
   } else {
       double R0 = pow((1-ior)/(1+ior),2);
-      double cos_theta = abs_cos_theta(refl.unit());
+      double cos_theta = abs_cos_theta(refr.unit());
       double R = clamp(R0 + (1-R0)*pow((1-cos_theta),5), 0, 1);
       if (coin_flip(R)) {
         *wi = refl;
