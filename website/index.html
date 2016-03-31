@@ -9,61 +9,74 @@
       padding-left: 100px;  
     }  
   </style> 
-<title>Your Name  |  CS 184</title>
+<title>Chuqian Li  |  CS 184</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
 </head>
 <body>
 <br />
 <h1 align="middle">Assignment 3: PathTracer</h1>
-    <h2 align="middle">Your Name</h2>
+    <h2 align="middle">Chuqian</h2>
 
     <div class="padded">
-        <p>Use this section to write an overview of the assignment. All of the text in your write-up should be <em>in your own words</em>. If you need to add additional HTML features to this document, you can search the <a href="http://www.w3schools.com/">http://www.w3schools.com/</a> website for instructions. To edit the HTML, you can just copy and paste existing chunks and fill in the text and image file names appropriately.</p>
-        <o>The website writeup is intended to be a self-contained walkthrough of the assignment: we want this to be a piece of work which showcases your understanding of relevant concepts through both mesh images as well as written explanations about what you did to complete each part of the assignment. Try to be as clear and organized as possible when writing about your own output files or extensions to the assignment. We want to understand what you've achieved and how you've done it!</p> 
-        <p>If you are well-versed in web development, feel free to ditch this template and make a better looking page. Just make sure that you include all the components as we've laid them out here. </p>
+        <p>In this assignment, I implemented various techniques used in ray tracing. The first two parts mainly deal with intersecting rays with objects and speeding up intersection using Bounding Volume Hierarchy. The third and fourth part implements tracing and sample from the light source and give me the power to render the actual light and shadows instead of just the shapes. Direct illuminance traces the light that directly come from the light source. Indirect illumincance also takes into account of light rays that bounce multiple times before hitting the object. The last part defines Bidirectional Scattering Distribution Function(bsdf) for mirror and glass materials. We render scenes of various shapes and materials in the cornell box to test and compare reflection and refraction effects of the ray tracer.</p>
 
     <h2 align="middle">Part 1: Ray Generation and Intersection</h2>
-        <p>Describe what you did in Part 1. etc...</p>
+        <h3>Ray Generation</h3>
+        <!-- <p>If num_samples == 1, the sample(x,y) passed the center of pixel (origin.x+0.5, origin.y+0.5)</p>
+        <p>If num_samples > 1, loop num_samples times. In each iteration, call gridSampler->get_sample to get a random Vector2D in range of [0,1]^2. Add this to (origin.x, origin.y) to get sample(x,y).</p>
+        <p>For each sample (x, y), divide by sampleBuffer.w and sampleBuffer.h to sacle it down to [0,1].</p>
+        <p>For each scaled sample, call camera->generate_ray. Set depth of the result ray as max_ray_depth. Average over the results of calling trace_ray on the generated rays to get the result spectrum.</p> -->
+        <p>We want a mapping that converts input (0,0) into (-tan(radians(hFov)*.5), -tan(radians(vFov)*.5)) and (1,1) into ( tan(radians(hFov)*.5),  tan(radians(vFov)*.5) on sensor plane. This is a easy linear transformation :</p>
+        <p align="middle"><pre align="middle">sensorX = -tan(radians(hFov)*.5) + x*2*(tan(radians(hFov)*.5))</pre></p>
+        <p align="middle"><pre align="middle">sensorY = -tan(radians(vFov)*.5) + y*2*(tan(radians(vFov)*.5))</pre></p>
+        <p>Apply c2w to (sensorX, sensorY, -1) to get world coordinate, which is also the direction of the generated ray.</p>
+        <p>Set the origin of the ray to camera postion, min_t to nClip, max_t to fClip.</p>
+        <h3>Primitive intersection</h3>
+        <p>After sample rays are generated, we follow the rays to find primitives that the ray hits. The two primitives are triangles and spheres. There are two versions of intersect function. THe first one is used to find any intersection. The second one is used to find the first intersection and return the intersection infomations like normal and intersected primites.</p>
+        <h4>Triangle Intersection</h4>
+        <p>I implemented Moller Trumbore Algorithm to find the t value on the intersected ray and barycentric coordinates of the intersection, the latter of which is used to calculate the normal of the intersection point.</p>
+        <p>Define E1 = P2 - P1, E2 = P3 - P1 (P1,P2,P3 are three vertices of triangle)</p>
+        <p>Define S = origin of ray - P1</p>
+        <p>Define S1 = the dot product of the direction of ray and E2</p>
+        <p>Define S2 = the dot product of S and E1</p>
+        <p>t = (dot product of S2 and E2)/(dot product of S1 and E1)</p>
+        <p>b2 = (dot product of S1 and S)/(dot product of S1 and E1)</p>
+        <p>b3 = (dot product of S2 and D)/(dot product of S1 and E1)</p>
+        <p>if any of b2, b3 is negative or (b2+b3) > 1, the intersection is outside the triangle. <p>
+        <p>Make sure the result t is within range of ray's min_t and max_t</p>
+        <p>For the second version of intersection, interpolated normal = (1-b2-b3)*n1+b2*n2+b3*n3</p>
+        
+        <h4>Sphere Intersection</h4>
+        <p>Plug o = ray's origin, d = ray's direction, c = circle's origin and R = circle's radius into the following formula.</p>
+        <p>If b^2-4a < -Epsilon, no intersection</p>
+        <p>Set the smaller t that's not negative and within range of min_t and max_t as intersection.<p>
+        <p align="middle"><pre align="middle"><img src="images/formula1.png" width=400px/></pre></p>
+        <h3>Normal shading on small files:</h3>
         <div align="center">
             <table style="width=100%">
                 <tr>
                     <td align="middle">
                     <img src="images/p1/CBempty_10.79.png" width="480px" />
-                    <figcaption align="middle">CBempty: 10.79s to render</figcaption>
+                    <figcaption align="middle">CBempty: 4.5s to render</figcaption>
                 </tr>
                 <tr>
                     <td align="middle">
                     <img src="images/p1/CBspheres_lambertian_12.98.png" width="480px" />
-                    <figcaption align="middle">CBspheres_lambertian: 12.98s to render</figcaption>
+                    <figcaption align="middle">CBspheres_lambertian: 5.8s to render</figcaption>
                 </tr>
                 <tr>
                     <td align="middle">
                     <img src="images/p1/CBgems_129.49.png" width="480px" />
-                    <figcaption align="middle">CBgems: 129.49s to render</figcaption>
+                    <figcaption align="middle">CBgems:76.3s to render</figcaption>
                 </tr>
             </table>
         </div>
-        <p>Here is an example of how to include a simple formula:</p>
-        <p align="middle"><pre align="middle">a^2 + b^2 = c^2</pre></p>
-        <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
-        <p>This time it's your job to copy-paste in the rest of the sections :)</p>
-        [PathTracer] Input scene file: ../dae/sky/CBspheres_lambertian.dae
-[PathTracer] Collecting primitives... Done! (0.0000 sec)
-[PathTracer] Building BVH from 14 primitives... Done! (0.0000 sec)
-[PathTracer] Rendering... 100%! (5.7204s)
-[PathTracer] BVH traced 10861138 rays.
-[PathTracer] Averaged 8.302319 intersection tests per ray.
-
-[PathTracer] Input scene file: ../dae/sky/CBgems.dae
-[PathTracer] Collecting primitives... Done! (0.0000 sec)
-[PathTracer] Building BVH from 252 primitives... Done! (0.0001 sec)
-[PathTracer] Rendering... 100%! (76.3131s)
-[PathTracer] BVH traced 11021158 rays.
-[PathTracer] Averaged 115.702678 intersection tests per ray.
 
     <h2 align="middle">Part 2: Bounding Volume Hierarchy</h2>
-        <p>Describe what you did in Part 1. etc...</p>
+        <p>The previous part a specific ray with primitives by looping over each primitive. In order to speed up this, we use bounding volumn hiearching which store primitives in recursive bounding volumns and find intersections using divide and conquer.</p>
+        <h3>BVH construction</h3>
+        
         <div align="center">
             <table style="width=100%">
                 <tr>
@@ -76,6 +89,18 @@
 
             </table>
         </div>
+
+        <p>Here is an example of how to include a simple formula:</p>
+        <p align="middle"><pre align="middle">a^2 + b^2 = c^2</pre></p>
+        <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
+        <p>This time it's your job to copy-paste in the rest of the sections :)</p>
+
+
+    <h2 align="middle">Part 3: Direct Illumination</h2>
+    <h2 align="middle">Part 4: Indirect Illumination</h2>
+    <h2 align="middle">Part 5: Materials</h2>
+
+<!-- 
 ==================small======================
 [PathTracer] Input scene file: ../dae/sky/CBspheres_lambertian.dae
 [PathTracer] Collecting primitives... Done! (0.0000 sec)
@@ -145,11 +170,10 @@
 [PathTracer] Rendering... 100%! (39.0777s)
 [PathTracer] BVH traced 38539101 rays.
 [PathTracer] Averaged 6.043608 intersection tests per ray.
-
-        <p>Here is an example of how to include a simple formula:</p>
-        <p align="middle"><pre align="middle">a^2 + b^2 = c^2</pre></p>
-        <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
-        <p>This time it's your job to copy-paste in the rest of the sections :)</p>
+ 
+p4:
+./pathtracer -t 8 -s 64 -l 16 -m 5 -r 480 360 -f bunny_indirect.png ../dae/sky/CBbunny.dae
+-->
 
     <h2 align="middle">A Few Notes On Webpages</h2>
         <p>Here are a few problems students have encountered in the past. You will probably encounter these problems at some point, so don't wait until right before the deadline to check that everything is working. Test your website on the instructional machines early!</p>
@@ -161,10 +185,6 @@
         <li>Pay close attention to your filename extensions. Remember that on UNIX systems (such as the instructional machines), capitalization matters. <pre>.png != .jpeg != .jpg != .JPG</pre>
         <li>Be sure to adjust the permissions on your files so that they are world readable. For more information on this please see this tutorial: <a href="http://www.grymoire.com/Unix/Permissions.html">http://www.grymoire.com/Unix/Permissions.html</a></li>
         <li>And again, test your website on the instructional machines early!</li>
-
-p4:
-./pathtracer -t 8 -s 64 -l 16 -m 5 -r 480 360 -f bunny_indirect.png ../dae/sky/CBbunny.dae
-
 </div>
 </body>
 </html>
