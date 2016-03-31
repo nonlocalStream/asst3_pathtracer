@@ -43,10 +43,10 @@ Spectrum DiffuseBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
 // Mirror BSDF //
 
 Spectrum MirrorBSDF::f(const Vector3D& wo, const Vector3D& wi) {
-  Vector3D refl_in;
-  reflect(wo, &refl_in);
+  Vector3D refl;
+  reflect(wo, &refl);
   double cos_w = dot(Vector3D(0,0,1), wo.unit());
-  if (refl_in == wi) {
+  if (refl == wi) {
     return reflectance / cos_w;
   } else {
     return Spectrum();
@@ -100,7 +100,29 @@ Spectrum GlassBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
 
   // TODO Part 5:
   // Compute Fresnel coefficient and either reflect or refract based on it.
-  
+  Vector3D refl, refr;
+  reflect(wo, &refl);
+  bool has_refr = refract(wo, &refr, ior);
+  double cos_o = abs_cos_theta(wo.unit());
+  if (!has_refr) {
+      *wi = refl;
+      *pdf = 1.f;
+      return reflectance / cos_o;
+  } else {
+      double R0 = pow((1-ior)/(1+ior),2);
+      double cos_theta = abs_cos_theta(refl.unit());
+      double R = clamp(R0 + (1-R0)*pow((1-cos_theta),5), 0, 1);
+      if (coin_flip(R)) {
+        *wi = refl;
+        *pdf = R;
+        return R * reflectance / cos_o;
+      } else {
+        *wi = refr;
+        *pdf = 1.f - R;
+        double ni_div_no = (wo.z > 0) ? ior: 1/ior;
+        return (1.f-R)*transmittance*pow(ni_div_no, 2)/cos_o;
+      }
+  }
   return Spectrum();
 }
 
@@ -118,9 +140,27 @@ bool BSDF::refract(const Vector3D& wo, Vector3D* wi, float ior) {
   // Return false if refraction does not occur due to total internal reflection
   // and true otherwise. When dot(wo,n) is positive, then wo corresponds to a
   // ray entering the surface through vacuum.
+  Vector3D n = Vector3D(0,0,1); 
+  float ni, no, sin_theta_i, sin_theta_o;
+  if (dot(wo,n) > 0) { //what about == 0?
+    no = 1;
+    ni = ior;
+  } else {
+    no = ior;
+    ni = 1;
+  }
+  sin_theta_o = sin_theta(wo);
+  if (no*sin_theta_o >= ni) return false;
+  sin_theta_i = no*sin_theta_o/ni;
+  double x2_plus_y2 = pow(wo.x,2)+pow(wo.y,2);
+  double z2 = x2_plus_y2/pow(sin_theta_i,2) - x2_plus_y2;
+  double z = sqrt(z2);
 
+  if (dot(wo,n) > 0) { //if wo from above, z should be negative
+      z = -z;
+  }
+  *wi = Vector3D(-wo.x, -wo.y, z).unit();
   return true;
-
 }
 
 // Emission BSDF //
