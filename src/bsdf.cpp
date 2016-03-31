@@ -93,16 +93,7 @@ Spectrum RefractionBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) 
 // Glass BSDF //
 
 Spectrum GlassBSDF::f(const Vector3D& wo, const Vector3D& wi) {
-  /*Vector3D refl;
-  reflect(wo, &refl);
-  double cos_w = dot(Vector3D(0,0,1), wo.unit());
-  if (wi == refl) {
-    return reflectance / cos_w;
-  } else if () {
-    return Spectrum();
-  }
-  */
-    return Spectrum();
+  return Spectrum();
 }
 
 Spectrum GlassBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
@@ -133,38 +124,6 @@ Spectrum GlassBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
       }
   }
   return Spectrum();
-    
-    /*
-  float R0 = (ior-1.0)*(ior-1.0)/((ior + 1.0)*(ior + 1.0));
-  float cosTheta = cos_theta(wo);
-  float f = 1 - fabs(cosTheta);
-  float g = ((f * f) * (f * f)) * f;
-  float fresnel_coe = R0 + (1.0 - R0)*g;
-bool entering = cos_theta(wo) > 0;
-  float ei = 1.f, et = ior;
-  if (!entering) {
-      swap(ei, et);
-      cosTheta = -cosTheta;  // be careful here, want cosTheta to be
-                             // positive for everything below
-  }
-  float inveta = et / ei;
-  float inveta2 = inveta * inveta;
-if (!refract(wo, wi, ior)) {
-    // total internal reflection; always reflect
-    *pdf = 1.0;
-    reflect(wo, wi);
-    return (1 / cosTheta) * reflectance;
-  }
-if (coin_flip(fresnel_coe)) {
-    *pdf = fresnel_coe;
-    reflect(wo, wi);
-    return (fresnel_coe / cosTheta) * reflectance;
-  } else {
-    // refraction ray has already been computed
-    float one_minus_fresnel = 1.0f - fresnel_coe;
-    *pdf = one_minus_fresnel;
-    return (one_minus_fresnel * inveta2 / cosTheta) * transmittance;
-  }*/
 }
 
 void BSDF::reflect(const Vector3D& wo, Vector3D* wi) {
