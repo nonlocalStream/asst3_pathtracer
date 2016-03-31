@@ -456,7 +456,6 @@ Spectrum PathTracer::estimate_direct_lighting(const Ray& r, const Intersection& 
 Spectrum PathTracer::estimate_indirect_lighting(const Ray& r, const Intersection& isect) {
 
   // TODO Part 4
-
   Matrix3x3 o2w;
   make_coord_space(o2w, isect.n);
   Matrix3x3 w2o = o2w.T();
@@ -468,16 +467,16 @@ Spectrum PathTracer::estimate_indirect_lighting(const Ray& r, const Intersection
   float distToLight, pdf;
 
   Spectrum bsdf = isect.bsdf->sample_f(w_out, &w_in, &pdf);
-  float illum = clamp(bsdf.illum(), 0, 1); // prob of not terminating
+  float illum = clamp(bsdf.illum()*10, 0, 1); // prob of not terminating
   if (coin_flip(illum)) { //coin_flip == true with prob of (1-tpdf)
       wi = o2w * w_in;
       Ray trace_r = Ray(EPS_D * wi + hit_p, wi, (int)(r.depth-1));
-      double cos_w = dot(isect.n.unit(), wi.unit());
+      double cos_w = abs_cos_theta(w_in);
       Spectrum income_radience = trace_ray(trace_r, isect.bsdf->is_delta());
       return income_radience * cos_w * bsdf / (pdf * illum);// prob of not terminating
   } else {
     return Spectrum();
-  }
+ }
 }
 
 Spectrum PathTracer::trace_ray(const Ray &r, bool includeLe) {
